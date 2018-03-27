@@ -1,0 +1,122 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "My first cloudformation templete",
+  "Parameters": {
+
+    "InstanceType": {
+      "Description": "Instance1 EC2 instance type",
+      "Type": "String",
+      "Default": "t2.micro",
+      "AllowedValues": ["t2.micro", "m1.small", "m1.medium", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "m3.medium", "m3.xlarge", "c4.xlarge", "c4.4xlarge", "m3.2xlarge", "c1.medium", "c1.xlarge", "cc1.4xlarge", "c4.large", "cc2.8xlarge", "cg1.4xlarge"]
+    },
+
+
+
+    "ImageId": {
+      "Type": "String"
+    },
+
+    "KeyName": {
+      "Description": "EC2 Key Pair for SSH Access",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    },
+
+    "AvailabilityZone": {
+      "Description": "Select the AvailabilityZone",
+      "Type": "AWS::EC2::AvailabilityZone::Name"
+    },
+
+    "Subnet": {
+      "Description": "Select the subnet",
+      "Type": "AWS::EC2::Subnet::Id"
+    }
+  },
+
+  "Resources": {
+
+
+    "WebServerSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Enable HTTP access via port 80",
+        "SecurityGroupIngress": [{
+          "IpProtocol": "tcp",
+          "FromPort": "80",
+          "ToPort": "80",
+          "CidrIp": "0.0.0.0/0"
+        },
+{
+          "IpProtocol": "tcp",
+          "FromPort": "22",
+          "ToPort": "22",
+          "CidrIp": "125.16.128.226/32"
+        }
+
+      ]
+      }
+    },
+
+
+
+
+    "Ec2Instance": {
+      "Type": "AWS::EC2::Instance",
+      "Metadata": {
+        "AWS::CloudFormation::Init": {
+          "config": {
+            "commands": {
+
+              "cmd2": {
+                "command": " sudo yum install -y httpd \n"
+              },
+              "cmd3": {
+                "command": " sudo service httpd start \n"
+              },
+
+              "cmd4": {
+                "command": "sudo chkconfig httpd on"
+              }
+            }
+          }
+        }
+      },
+
+      "Properties": {
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "ImageId": {
+          "Ref": "ImageId"
+        },
+        "AvailabilityZone": {
+          "Ref": "AvailabilityZone"
+        },
+        "SecurityGroups": [{
+          "Ref": "WebServerSecurityGroup"
+        }],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": ["", [
+              "#!/bin/bash\n",
+              "sudo yum update -y\n",
+              "/opt/aws/bin/cfn-init -v ",
+              "--stack ", {
+                "Ref": "AWS::StackName"
+              },
+              " --region ", {
+                "Ref": "AWS::Region"
+              },
+              " --resource  Ec2Instance\n"
+
+
+            ]]
+          }
+        }
+      }
+
+    }
+  }
+}
